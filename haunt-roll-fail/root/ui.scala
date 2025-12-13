@@ -99,7 +99,6 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
 
 
     lazy val findAnother = {
-
         val mplace = resources.images.get(mapid + "map-regions")
         val placeb = new Bitmap(mplace.width, mplace.height)
         placeb.context.drawImage(mplace, 0, 0)
@@ -168,8 +167,6 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
             case TradePost(Mouse) => { DrawRect(pr + "trade-post-mouse", -45, -45, 90, 90) }
             case Tunnel => { DrawRect(pr + "tunnel", -45, -45, 90, 90) }
             case Catapult => { DrawRect(pr + "catapult", -45, -45, 90, 90) }
-
-
 
             case HiddenPlot => { DrawRect(pr + "plot", -45, -45, 90, 90) }
             case Bomb => { DrawRect(pr + "bomb", -45, -45, 90, 90) }
@@ -898,7 +895,6 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
         }
 
         if (lastActions.none) {
-
             return
         }
 
@@ -975,7 +971,6 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
                     }
                     else {
                         lastActionsChosen = Some(n - 1)
-
                         Speech.say("confirm " + q + s + " with Enter.")
                     }
                 }
@@ -1001,7 +996,6 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
                     else {
                         lastActionsChosen = Some(n - 1)
                         Speech.say(q + " - " + s + " ... Press " + n + " and then Enter to confirm.")
-
                     }
                 }
             }
@@ -1505,7 +1499,7 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
 
             case f : Caster =>
                 val ss = f.spells
-
+                // ("Magic " ~ f.mana.styled(f)).div(styles.minister) ~
                 (Image(f.style + "-statue", styles.token) *** f.all(Statue).num) ~ (Image("empty-token", styles.token) *** f.pooled(Statue)) ~ Break ~ Gap ~
                 (Image(f.style + "-school", styles.building) *** f.all(School).num) ~ (Image("empty-building", styles.building) *** f.pooled(School)) ~ Break ~ Gap ~
                 ss./(_.cost).distinct./(c => ss.%(_.cost == c)./(_.toString.hl).spaced.merge.div(styles.minister)) ~
@@ -1571,7 +1565,7 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
                     (f.deck.num.formatted("%2d").hl.styled(styles.doubleFigures) ~ Image("deck-frog", styles.pile)).&.pointer.onClick.param("view-frog-deck", f) ~
                     (f.pile.num.formatted("%2d").hl.styled(styles.doubleFigures) ~ Image("pile-" + f.pile.any.?(f.pile.last.suit).|("empty"), styles.pile)).&.pointer.onClick.param("view-frog-discard", f)
                 ).div(xstyles.smaller75) ~
-                (game.current == f).?(Gap ~ 1.to(3)./(_ => Image("action-black", styles.building)).take(f.acted) ~ (1.to(3)./(_ => Image(f.style + "-action", styles.building))).drop(f.acted)) ~
+                (game.current == f).?(Gap ~ 1.to(3 /*+ f.extra*/)./(_ => Image("action-black", styles.building)).take(f.acted) ~ (1.to(3)./(_ => Image(f.style + "-action", styles.building)) /*++ (0.until(f.extra)./(_ => Image("action-bird", styles.building)))*/).drop(f.acted)) ~
                 Div(Hint("Frogs\n" + f.all(f.warrior).num + " on the map\n" + f.pooled(f.warrior) + " available",
                 &((Image(f.style + "-frog-x5", styles.wr) *** (f.all(f.warrior).num / 5)) ~ (Image(f.style + "-frog", styles.wr) *** (f.all(f.warrior).num % 5))) ~
                 &((Image(f.style + "-frog-empty", styles.wr) *** (f.pooled(f.warrior) % 5)) ~ (Image(f.style + "-frog-x5-empty", styles.wr) *** (f.pooled(f.warrior) / 5)))), styles.warline)
@@ -1978,7 +1972,7 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
 
             case f : Horde if chapter.none =>
                 showOverlay(overlayScrollX((
-
+                    // Image("info:lord-of-the-hundreds-1")(styles.illustration) ~
                     HGap ~
                     HGap ~
                     HGap ~
@@ -2167,7 +2161,7 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
 
             case f : Expedition if chapter.none =>
                 showOverlay(overlayScrollX((
-
+                    // Image("info:lord-of-the-hundreds-1")(styles.illustration) ~
                     HGap ~
                     HGap ~
                     HGap ~
@@ -2202,8 +2196,7 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
                     more("Also provide", "crafting".hh, Comma, "and one extra", "card".hh, "draw each", Dot) ~
                     more("A", Badger.of(f), "can", "encamp".hh, "in a clearing with a free building slot to become a", "Waystation".styled(f), Dot) ~
                     more("A", "Waystation".styled(f), "can", "decamp".hh, "to become a", Badger.of(f), "again", Dot) ~
-
-
+                    // more("Decamp".hh, "is a reverse process,", "Waystation".styled(f), "becomes a", Badger.of(f), Dot) ~
                     buildingLine(n => f.wst.%(w => f.all(w).any).apply(n).imgid(f), 6 - f.wst./(f.pooled).sum, f.wst./(f.pooled).sum - 3) ~
                     f.wst./~(w => f.all(w)).some.map(l =>
                         desc("Recruit", 2.hlb.larger, Badger.sof(f), "with", l./(_.cost).distinct./(dt.CardSuit).merge, Comma, "craft", l./(_.asset)./(dt.CraftSuit).merge)
@@ -2344,7 +2337,6 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
                     HGap ~
                     HGap ~
                     HGap ~
-
                     Image("xc-board")(styles.factionboard) ~
                     HGap ~
                     HGap ~
@@ -2475,7 +2467,6 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
                     HGap ~
                     HGap ~
                     HGap ~
-
                     Image("fh-board-v2")(styles.factionboard) ~
                     HGap ~
                     HGap ~
@@ -3119,7 +3110,7 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
 
             case f : StoicProtector.type =>
                 showOverlay(overlayScrollX((
-
+                    // Image("info:stoic-protector")(styles.illustration) ~
                     HGap ~
                     HGap ~
                     HGap ~
@@ -3676,9 +3667,6 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
         case FaithfulRetainer =>
             showOverlay(overlayFitX(Image("artwork:" + "faithful-retainer", xstyles.artwork)), onClick)
 
-
-
-
         case d : DeckCard =>
             if (resources.images.hasSource("artwork:" + d.id))
                 showOverlay(overlayFitX(Image("artwork:" + d.id, xstyles.artwork)), onClick)
@@ -3779,7 +3767,6 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
                 BasicPane("status-game-b", 35, 4.4, Priorities(top = 1, grow = -1, maxXscale = 3.0, maxYscale = 3.2)),
                 BasicPane("log-a", 30, 10*4/4, Priorities(grow = 1, bottom = 1, top = -1, right = 1)),
                 BasicPane("log-b", 20, 22*4/4, Priorities(grow = 1, bottom = 1, top = -1, right = 1)),
-
                 BasicPane("map-small", 60*0.82*2*2, 55*0.82*2*2, Priorities(top = 3, left = 1, grow = -1, maxXscale = 1.2, maxYscale = 1.2)),
                 BasicPane("action-a", 48, 22+2-1, Priorities(bottom = 2, right = 2, grow = 2)),
                 BasicPane("action-b", 41, 38, Priorities(bottom = 2, right = 2, grow = 1, maxXscale = 1.2))
@@ -3949,7 +3936,7 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
         case f => f
     }
 
-    override def wait(self : $[Player], factions : $[Player]) {
+    override def wait(self : $[Player], factions : $[Player], message : Elem) {
         val was = lastWaiting
 
         lastThen = null
@@ -3963,7 +3950,7 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
 
         showNotifications(self)
 
-        super.wait(self./(fix), factions./(fix))
+        super.wait(self./(fix), factions./(fix), message)
     }
 
     override val allSwitches = $(
@@ -4200,7 +4187,7 @@ class UI(val uir : ElementAttachmentPoint, arity : Int, options : $[Meta.O], val
                 case Figure(faction, piece, _) -> _ => Figure(faction, piece, 0)
             }.toSet).distinct
 
-            if (actions.has(HiddenAssignHits) && choice.num == 1 && (callbacks.settings.has(AutoAssignHits))) {
+            if (actions.has(HiddenAssignHits) && choice.num == 1 && (callbacks.settings.has(AutoAssignHits) /*|| { dom.window.alert("auto hits off") ; false }*/)) {
                 scalajs.js.timers.setTimeout(0) { then(expand(0)) }
                 return
             }

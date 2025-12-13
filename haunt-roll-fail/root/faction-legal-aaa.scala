@@ -326,7 +326,7 @@ object LegalAAAExpansion extends FactionExpansion[LegalAAA] {
             if (f.pooled(BatAAA) >= l.num)
                 Force(LegalAAARecruitListAction(f, s, l, l))
             else
-                Ask(f)(l.combinations(f.pooled(BatAAA)).$./(LegalAAARecruitListAction(f, s, _, l))).cancel
+                Ask(f).each(l.combinations(f.pooled(BatAAA)).$)(LegalAAARecruitListAction(f, s, _, l)).cancel
 
         case LegalAAARecruitListAction(f, s, l, r) =>
             OptionalDiscardCardAction(f, RecruitsIn(l), s, LegalAAARecruitAction(f, s, l, r))
@@ -354,7 +354,7 @@ object LegalAAAExpansion extends FactionExpansion[LegalAAA] {
 
             Ask(f).group("Start of", Daylight)
                 .add(MarchAction(f, 1, 2, WageWarAction(f, 1, 1, UsedEffectAction(f, PacificyThreats, Repeat))).as(PacificyThreats.of(f), dt.Move, dt.Move, dt.Battle))
-                .add(cw.any.?(BattleInitAction(f, f, WithEffect(CommandWarren), cw, $(CancelAction), UsedEffectAction(f, CommandWarren, Repeat)).as(CommandWarren)))
+                .when(cw.any)(BattleInitAction(f, f, WithEffect(CommandWarren), cw, $(CancelAction), UsedEffectAction(f, CommandWarren, Repeat)).as(CommandWarren))
                 .skip(Next)
 
         case DaylightNAction(20, f : LegalAAA) =>
