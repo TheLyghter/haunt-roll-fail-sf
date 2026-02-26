@@ -1,4 +1,4 @@
-name: Build & Deploy (README exact + Pages)
+name: Build & Deploy (README /hrf for GitHub Pages)
 
 on:
   push:
@@ -32,17 +32,20 @@ jobs:
           sudo mv sbt /usr/local/bin/sbt
           sbt --script-version || true
 
-      # README 1
+      # README step 1
       - name: scala-js-dom-reduced publishLocal
         working-directory: scala-js-dom-reduced
         run: sbt publishLocal
 
-      # README 2
+      # README step 2
       - name: haunt-roll-fail fastOptJS
         working-directory: haunt-roll-fail
         run: sbt fastOptJS
 
-      # README 3 (create). Usamos RUTAS ABSOLUTAS para evitar líos de ../
+      # README step 3 (create) — adaptado a GitHub Pages
+      # README usa:
+      #   host: http://localhost:7070
+      #   base: http://localhost:7070/hrf/
       - name: good-game create
         working-directory: good-game
         run: |
@@ -54,37 +57,40 @@ jobs:
           OWNER="${GITHUB_REPOSITORY_OWNER}"
           REPO="${GITHUB_REPOSITORY#*/}"
           HOST="https://${OWNER}.github.io"
-          BASE="https://${OWNER}.github.io/${REPO}/"
+          BASE="https://${OWNER}.github.io/${REPO}/hrf/"
 
           sbt "run create ${DB_DIR} ${HRF_DIR} ${HOST} ${BASE} 7070"
 
-          echo "=== AFTER CREATE: good-game-database ==="
+          echo "=== DB top ==="
           ls -la "${DB_DIR}" | head -n 200
-          echo "=== AFTER CREATE: good-game-database files (depth 3) ==="
-          find "${DB_DIR}" -maxdepth 3 -type f | head -n 200
 
-      - name: Prepare Pages artifact
+      - name: Prepare Pages artifact (publish under /hrf)
         run: |
-          set -e
-          mkdir -p site
+          mkdir -p site/hrf
 
-          # Publica la app
-          cp -R haunt-roll-fail/. site/
-
-          # Publica el database si existe (y NO falla si está vacío)
+          # Publicamos la app y el database dentro de /hrf/
+          cp -R haunt-roll-fail/. site/hrf/
           if [ -d "good-game-database" ]; then
-            cp -R good-game-database/. site/
-          else
-            echo "WARNING: good-game-database does not exist at repo root"
-            ls -la
+            cp -R good-game-database/. site/hrf/
           fi
 
-          touch site/.nojekyll
+          # Raíz: redirige a /hrf/
+          cat > site/index.html <<'EOF'
+          <!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8" />
+              <meta http-equiv="refresh" content="0; url=./hrf/" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>HRF</title>
+            </head>
+            <body>
+              <p>Redirecting to <a href="./hrf/">/hrf/</a>…</p>
+            </body>
+          </html>
+          EOF
 
-          echo "=== SITE ROOT (top) ==="
-          ls -la site | head -n 200
-          echo "=== SITE DIRS (depth 2) ==="
-          find site -maxdepth 2 -type d | sort | head -n 200
+          touch site/.nojekyll
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
