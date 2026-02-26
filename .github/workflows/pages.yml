@@ -42,10 +42,27 @@ jobs:
         working-directory: haunt-roll-fail
         run: sbt fastOptJS
 
+      # ESTE ES EL PASO QUE NOS FALTABA (según el README)
+      - name: Run good-game create (generate database/assets/config)
+        working-directory: good-game
+        run: |
+          mkdir -p ../good-game-database
+          OWNER="${GITHUB_REPOSITORY_OWNER}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          HOST="https://${OWNER}.github.io"
+          BASE="https://${OWNER}.github.io/${REPO}/hrf/"
+          sbt "run create ../good-game-database ../haunt-roll-fail ${HOST} ${BASE} 7070"
+
       - name: Prepare Pages artifact
         run: |
           mkdir -p site
-          cp -R haunt-roll-fail/* site/
+          # No lo sé si 'create' genera exactamente en haunt-roll-fail/hrf o en otro sitio,
+          # así que lo detectamos y publicamos lo correcto.
+          if [ -d "haunt-roll-fail/hrf" ]; then
+            cp -R haunt-roll-fail/hrf/* site/
+          else
+            cp -R haunt-roll-fail/* site/
+          fi
           touch site/.nojekyll
 
       - name: Upload artifact
