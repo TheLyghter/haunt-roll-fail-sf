@@ -42,23 +42,43 @@ jobs:
         working-directory: haunt-roll-fail
         run: sbt fastOptJS
 
-      # README 3 (create). "run run" NO: es servidor local.
+      # README 3 (create). Usamos RUTAS ABSOLUTAS para evitar líos de ../
       - name: good-game create
         working-directory: good-game
         run: |
-          mkdir -p ../good-game-database
+          DB_DIR="${GITHUB_WORKSPACE}/good-game-database"
+          HRF_DIR="${GITHUB_WORKSPACE}/haunt-roll-fail"
+
+          mkdir -p "${DB_DIR}"
+
           OWNER="${GITHUB_REPOSITORY_OWNER}"
           REPO="${GITHUB_REPOSITORY#*/}"
           HOST="https://${OWNER}.github.io"
           BASE="https://${OWNER}.github.io/${REPO}/"
-          sbt "run create ../good-game-database ../haunt-roll-fail ${HOST} ${BASE} 7070"
 
-      # Publica: (a) la app (haunt-roll-fail) y (b) el database (good-game-database)
+          sbt "run create ${DB_DIR} ${HRF_DIR} ${HOST} ${BASE} 7070"
+
+          echo "=== AFTER CREATE: good-game-database ==="
+          ls -la "${DB_DIR}" | head -n 200
+          echo "=== AFTER CREATE: good-game-database files (depth 3) ==="
+          find "${DB_DIR}" -maxdepth 3 -type f | head -n 200
+
       - name: Prepare Pages artifact
         run: |
+          set -e
           mkdir -p site
-          cp -R haunt-roll-fail/* site/
-          cp -R good-game-database/* site/
+
+          # Publica la app
+          cp -R haunt-roll-fail/. site/
+
+          # Publica el database si existe (y NO falla si está vacío)
+          if [ -d "good-game-database" ]; then
+            cp -R good-game-database/. site/
+          else
+            echo "WARNING: good-game-database does not exist at repo root"
+            ls -la
+          fi
+
           touch site/.nojekyll
 
           echo "=== SITE ROOT (top) ==="
