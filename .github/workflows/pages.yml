@@ -1,29 +1,55 @@
-- name: Prepare Pages artifact
+name: Build (README exact)
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install sbt launcher
         run: |
-          mkdir -p site/hrf
+          curl -fsSL https://raw.githubusercontent.com/paulp/sbt-extras/master/sbt > sbt
+          chmod +x sbt
+          sudo mv sbt /usr/local/bin/sbt
+          sbt --script-version || true
 
-          # Publicamos TODO bajo /hrf/ (como espera good-game create)
-          if [ -d "haunt-roll-fail/hrf" ]; then
-            cp -R haunt-roll-fail/hrf/* site/hrf/
-          else
-            # fallback por si no existe esa carpeta por cualquier motivo
-            cp -R haunt-roll-fail/* site/hrf/
-          fi
+      # README step 1
+      - name: scala-js-dom-reduced publishLocal
+        working-directory: scala-js-dom-reduced
+        run: sbt publishLocal
 
-          # Página raíz: redirige a /hrf/
-          cat > site/index.html <<'EOF'
-          <!doctype html>
-          <html>
-            <head>
-              <meta charset="utf-8" />
-              <meta http-equiv="refresh" content="0; url=./hrf/" />
-              <meta name="viewport" content="width=device-width, initial-scale=1" />
-              <title>HRF</title>
-            </head>
-            <body>
-              <p>Redirecting to <a href="./hrf/">/hrf/</a>…</p>
-            </body>
-          </html>
-          EOF
+      # README step 2
+      - name: haunt-roll-fail fastOptJS
+        working-directory: haunt-roll-fail
+        run: sbt fastOptJS
 
-          touch site/.nojekyll
+      # README step 3 (create). "run run" NO, porque es servidor local infinito.
+      - name: good-game create
+        working-directory: good-game
+        run: |
+          mkdir -p ../good-game-database
+          OWNER="${GITHUB_REPOSITORY_OWNER}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          HOST="https://${OWNER}.github.io"
+          BASE="https://${OWNER}.github.io/${REPO}/"
+          sbt "run create ../good-game-database ../haunt-roll-fail ${HOST} ${BASE} 7070"
+
+      # VERAZ: listamos qué se generó, sin asumir rutas
+      - name: Show generated output
+        run: |
+          echo "=== haunt-roll-fail top ==="
+          ls -la haunt-roll-fail | head -n 200
+          echo "=== haunt-roll-fail/hrf (if exists) ==="
+          ls -la haunt-roll-fail/hrf || true
+          echo "=== find (maxdepth 3) ==="
+          find haunt-roll-fail -maxdepth 3 -type f | head -n 200
