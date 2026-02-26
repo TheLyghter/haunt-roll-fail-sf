@@ -1,80 +1,29 @@
-name: Build & Deploy (HRF)
-
-on:
-  push:
-    branches: ["main"]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Install sbt launcher
+- name: Prepare Pages artifact
         run: |
-          curl -fsSL https://raw.githubusercontent.com/paulp/sbt-extras/master/sbt > sbt
-          chmod +x sbt
-          sudo mv sbt /usr/local/bin/sbt
-          sbt --script-version || true
+          mkdir -p site/hrf
 
-      - name: Build scala-js-dom-reduced (publishLocal)
-        working-directory: scala-js-dom-reduced
-        run: sbt publishLocal
-
-      - name: Build haunt-roll-fail (Scala.js fastOptJS)
-        working-directory: haunt-roll-fail
-        run: sbt fastOptJS
-
-      # ESTE ES EL PASO QUE NOS FALTABA (según el README)
-      - name: Run good-game create (generate database/assets/config)
-        working-directory: good-game
-        run: |
-          mkdir -p ../good-game-database
-          OWNER="${GITHUB_REPOSITORY_OWNER}"
-          REPO="${GITHUB_REPOSITORY#*/}"
-          HOST="https://${OWNER}.github.io"
-          BASE="https://${OWNER}.github.io/${REPO}/hrf/"
-          sbt "run create ../good-game-database ../haunt-roll-fail ${HOST} ${BASE} 7070"
-
-      - name: Prepare Pages artifact
-        run: |
-          mkdir -p site
-          # No lo sé si 'create' genera exactamente en haunt-roll-fail/hrf o en otro sitio,
-          # así que lo detectamos y publicamos lo correcto.
+          # Publicamos TODO bajo /hrf/ (como espera good-game create)
           if [ -d "haunt-roll-fail/hrf" ]; then
-            cp -R haunt-roll-fail/hrf/* site/
+            cp -R haunt-roll-fail/hrf/* site/hrf/
           else
-            cp -R haunt-roll-fail/* site/
+            # fallback por si no existe esa carpeta por cualquier motivo
+            cp -R haunt-roll-fail/* site/hrf/
           fi
+
+          # Página raíz: redirige a /hrf/
+          cat > site/index.html <<'EOF'
+          <!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8" />
+              <meta http-equiv="refresh" content="0; url=./hrf/" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>HRF</title>
+            </head>
+            <body>
+              <p>Redirecting to <a href="./hrf/">/hrf/</a>…</p>
+            </body>
+          </html>
+          EOF
+
           touch site/.nojekyll
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: github-pages
-    steps:
-      - name: Deploy
-        uses: actions/deploy-pages@v4
