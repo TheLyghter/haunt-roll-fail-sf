@@ -1,9 +1,18 @@
-name: Build (README exact)
+name: Build & Deploy (README exact + Pages)
 
 on:
   push:
     branches: ["main"]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -23,17 +32,17 @@ jobs:
           sudo mv sbt /usr/local/bin/sbt
           sbt --script-version || true
 
-      # README step 1
+      # README 1
       - name: scala-js-dom-reduced publishLocal
         working-directory: scala-js-dom-reduced
         run: sbt publishLocal
 
-      # README step 2
+      # README 2
       - name: haunt-roll-fail fastOptJS
         working-directory: haunt-roll-fail
         run: sbt fastOptJS
 
-      # README step 3 (create). "run run" NO, porque es servidor local infinito.
+      # README 3 (create). "run run" NO: es servidor local.
       - name: good-game create
         working-directory: good-game
         run: |
@@ -44,12 +53,28 @@ jobs:
           BASE="https://${OWNER}.github.io/${REPO}/"
           sbt "run create ../good-game-database ../haunt-roll-fail ${HOST} ${BASE} 7070"
 
-      # VERAZ: listamos qué se generó, sin asumir rutas
-      - name: Show generated output
+      # Publica: (a) la app (haunt-roll-fail) y (b) el database (good-game-database)
+      - name: Prepare Pages artifact
         run: |
-          echo "=== haunt-roll-fail top ==="
-          ls -la haunt-roll-fail | head -n 200
-          echo "=== haunt-roll-fail/hrf (if exists) ==="
-          ls -la haunt-roll-fail/hrf || true
-          echo "=== find (maxdepth 3) ==="
-          find haunt-roll-fail -maxdepth 3 -type f | head -n 200
+          mkdir -p site
+          cp -R haunt-roll-fail/* site/
+          cp -R good-game-database/* site/
+          touch site/.nojekyll
+
+          echo "=== SITE ROOT (top) ==="
+          ls -la site | head -n 200
+          echo "=== SITE DIRS (depth 2) ==="
+          find site -maxdepth 2 -type d | sort | head -n 200
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/deploy-pages@v4
